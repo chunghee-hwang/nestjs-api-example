@@ -6,7 +6,7 @@
 
 ### NestJS
 
-NestJS는 Node.js의 express 위에서 돌아가는 프레임워크이다.
+NestJS는 Node.js의 express와 fastify 위에서 돌아가는 프레임워크이다.
 Java에는 Spring이 있듯이 언어마다 프레임워크가 존재한다.
 Spring처럼 Node.js보다 좀 더 구조적이고 엄격한 규칙을 적용한다.
 기업들이 선호하는 프레임워크이다.
@@ -155,6 +155,106 @@ app.module.ts에 다음과 같이 MoviesController가 자동으로 추가되었�
       };
   }
   ```
+- Req: HttpRequest 객체를 받을 수 있다. (express가 아닌 fastify위에서 NestJs가 동작 시 사용 안하는 것을 추천)
+- Res: HttpResponse 객체를 받을 수 있다. (express가 아닌 fastify위에서 NestJs가 동작 시 사용 안하는 것을 추천)
+
+### 예외 처리
+
+사용자가 DB에 없는 정보를 요청했을 경우 다음과 같이 예외를 던지면 404 http status를 응답한다.
+
+```ts
+// movies.service.ts
+getOne(id: string): Movie {
+  const movie = this.movies.find(movie => movie.id === +id); //+는 parseInt와 같음
+  if (!movie) {
+    throw new NotFoundException(`Movie with ID ${id} not found.`);
+  }
+  return movie;
+}
+```
+
+### 유효성 검사
+
+Request body에 유효하지 않은 데이터가 넘어오는 것을 방지해야한다.
+
+```bash
+npm i class-validator class-transformer @nestjs/mapped-types
+```
+
+다음과 같이 DTO를 생성하고, IsString 같은 validator로 유효성 검사를 한다.
+
+```ts
+// movies/dto/create-movie.dto.ts
+export class CreateMovieDto {
+  @IsString()
+  readonly title: string;
+  @IsNumber()
+  readonly year: number;
+  @IsString({ each: true })
+  readonly genres: string[];
+}
+```
+
+```ts
+// movies/dto/update-movie.dto.ts
+// UpdateMovieDto는 CreateMovieDto와 구조가 똑같다.
+// 단 모든 변수가 필수사항이 아니라는 점만 다르다.
+// 이럴 때, PartialType을 사용하여 간단히 만들 수 있다.
+export class UpdateMovieDto extends PartialType(CreateMovieDto) {}
+```
+
+컨트롤러와 서비스에 request body의 타입을 dto로 명시한다.
+
+```ts
+// movies/movies.controller.ts
+@Post()
+create(@Body() movieData: CreateMovieDto) {}
+```
+
+메인 모듈에 Validation Pipe를 사용하겠다고 선언한다.
+
+```ts
+// main.ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  // 유효성 검사를 도와주는 파이프 설정
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // 유효하지 않은 데이터는 컨트롤러로 아예 도달하지 못하도록 함
+      forbidNonWhitelisted: true, // 유효하지 않은 데이터를 받으면 리퀘스트 자체를 막는다.
+      transform: true, // 사용자가 보낸 데이터를 컨트롤러에 명시된 타입으로 자동으로 변환해줌. 예를 들어 id같은 경우 url로 넘어와서 string인데 컨트롤러에 명시된 타입이 number 타입이면 number로 자동 변환됨.
+    }),
+  );
+  await app.listen(3000);
+}
+```
+
+유효성 검사 결과
+<img src="./imgs/validation.png"></img>
+
+### Dependency Injection
+
+#### 컨트롤러에서 서비스 주입하기
+
+```ts
+// movies.module.ts
+@Module({
+  // ...
+  providers: [MoviesService], // providers에 MoviesService를 명시(의존성 주입하겠다는 뜻)
+})
+```
+
+```ts
+// movie.service.ts
+@Injectable() // 서비스에 의존성 주입이 가능하다고 명시
+export class MoviesService {}
+```
+
+```ts
+//movies.controller.ts
+constructor(private readonly movieService: MoviesService/*타입을 반드시 명시해야 주입 가능*/) {}
+// this.movieService로 서비스 접근 가능
+```
 
 ## 3. Unit Testing
 
