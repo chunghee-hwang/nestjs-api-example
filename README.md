@@ -121,7 +121,7 @@ app.module.ts에 다음과 같이 MoviesController가 자동으로 추가되었�
 })
 ```
 
-### Decoratiors
+### Decorators
 
 - Module : 모듈 정의
 - Controller: 컨트롤러 정의
