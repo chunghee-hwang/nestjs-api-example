@@ -2,14 +2,16 @@
 
 이 레포지토리는 노마드코더의 [NestJS로 API 만들기](https://nomadcoders.co/nestjs-fundamentals)를 수강하고 정리한 레포지토리입니다.
 
-## NestJS
+## 0. Instroduction
+
+### NestJS
 
 NestJS는 Node.js의 express 위에서 돌아가는 프레임워크이다.
 Java에는 Spring이 있듯이 언어마다 프레임워크가 존재한다.
 Spring처럼 Node.js보다 좀 더 구조적이고 엄격한 규칙을 적용한다.
 기업들이 선호하는 프레임워크이다.
 
-## [Project Setup](https://docs.nestjs.com/)
+### [Project Setup](https://docs.nestjs.com/)
 
 - Nest CLI 설치, 새 프로젝트 생성
 
@@ -27,7 +29,7 @@ Spring처럼 Node.js보다 좀 더 구조적이고 엄격한 규칙을 적용한
   http://localhost:3000 으로 접속
   ```
 
-## NestJS의 구조
+## 1. NestJS의 구조
 
 Spring과 마찬가지로 계층적 구조를 가진다.  
 NestJS는 컨트롤러를 비지니스 로직과 구분 짓고 싶어한다.  
@@ -71,6 +73,11 @@ NestJS는 컨트롤러를 비지니스 로직과 구분 짓고 싶어한다.
     getHello(): string {
       return this.appService.getHello();
     }
+    @Get('/:id')
+    getOne(@Param('id') identity: string /*이 변수는 다른 이름을 쓸수 있다.*/) {
+      // Param 데코레이터를 써야 정상적으로 인식한다.
+      return `This will return one movie with the id: ${identity}`;
+    }
   }
   ```
 
@@ -85,3 +92,70 @@ NestJS는 컨트롤러를 비지니스 로직과 구분 짓고 싶어한다.
     }
   }
   ```
+
+## 2. Rest API
+
+### Nest CLI 활용하기
+
+#### 사용 가능한 명령어 목록 확인
+
+```bash
+nest
+```
+
+#### Controller 생성
+
+```bash
+nest g controller
+? What name would you like to use for the controller? movies
+```
+
+컨트롤러 생성하면 movies/movies.controller.ts가 생성되고,  
+app.module.ts에 다음과 같이 MoviesController가 자동으로 추가되었음을 알 수 있다.
+
+```ts
+@Module({
+  imports: [],
+  controllers: [MoviesController],
+  providers: [],
+})
+```
+
+### Decoratiors
+
+- Module : 모듈 정의
+- Controller: 컨트롤러 정의
+- Injectable
+- Get: Get 방식 요청 컨트롤러 정의(Read)
+- Post: Post 방식 요청 컨트롤러 정의(Create)
+- Delete: Delete 방식 요청 컨트롤러 정의(Delete)
+- Patch: Patch 방식 요청 컨트롤러 정의(Update) -> 일부분만 업데이트
+- Put: Put 방식 요청 컨트롤러 정의(Update) -> 전체 업데이트
+- Query: URL에서 "movies/search?year=2000" 처럼 ?뒤에 들어오는 쿼리를 받을 때 사용
+  ```ts
+  @Get('search')
+  search(@Query('year') searchingYear: string) {
+      return `We are search for a movie made after ${searchingYear}`;
+  }
+  ```
+- Param: URL에서 "movies/1" 처럼 슬래시를 기준으로 들어오는 파라미터를 받을 때 사용
+  ```ts
+  @Get('/:id')
+  getOne(@Param('id') movieId: string) {
+      return `This will return one movie with the id: ${movieId}`;
+  }
+  ```
+- Body: Post, Delete, Patch, Put 요청 시 함께 들어오는 Request Body 데이터를 받을 때 사용
+  ```ts
+  @Patch('/:id') // Update
+  patch(@Param('id') movieId: string, @Body() updateData) {
+      return {
+      updatedMovie: movieId,
+      ...updateData,
+      };
+  }
+  ```
+
+## 3. Unit Testing
+
+## 4. E2E Testing
