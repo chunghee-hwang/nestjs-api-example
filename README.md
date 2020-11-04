@@ -291,7 +291,8 @@ npm run test:watch
 ### 단위 테스트 작성하기
 
 - describe: 테스트를 묘사하는 함수
-- beforeEach : 테스트 하기 전에 실행되는 함수
+- beforeEach: 단위 테스트 하나하나마다 실행 하기 전에 한 번씩 실행하는 함수
+- beforeAll: 모든 단위 테스트를 실행 하기 전에 한 번만 실행하는 함수. 데이터베이스가 단위 테스트마다 초기화되지 않게 하기 위해서 사용
 - it(individual test): 실제 개별 테스트를 하는 함수
 - expect: 로직의 값이 어떤 값이 될 것이라고 예측하는 함수
 
@@ -334,3 +335,97 @@ describe('MoviesService', () => {
 
 e2e: 모든 시스템을 테스팅하는 것.
 웹페이지를 테스트할 때 사용하고, 사용자 관점에서 확인할 때 사용한다.
+
+### e2e 테스트 시작하기
+
+```bash
+npm run test:e2e
+```
+
+### e2e 테스트 작성하기
+
+- get, post, patch, delete: 실제 url로 요청을 보내는 함수
+- todo: 테스트 해야할 목록 생성
+- send: Request body에 json 형태로 값을 전송하는 함수
+- expect: 서버에서 응답한 Http status를 예상하거나, 서버에서 응답한 데이터를 예상하는 함수
+
+```ts
+// test/app.e2e-spec.ts
+import * as request from 'supertest';
+
+describe('AppController (e2e)', () => {
+  let app: INestApplication;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  // 사용자가 요청을 보냈을 때의 관점으로 테스트를 한다.
+  it('/movies (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/movies')
+      .expect(200) // Http status 200
+      .expect([]); // 빈 영화 배열 예상
+  });
+
+  describe('/movies/:id', () => {
+    it('PATCH 200', () => {
+      return request(app.getHttpServer())
+        .patch('/movies/1')
+        .send({
+          title: 'Updated Test',
+        })
+        .expect(200);
+    });
+    it('DELETE 200', () => {
+      return request(app.getHttpServer())
+        .delete('/movies/1')
+        .expect(200);
+    });
+  });
+});
+```
+
+### 테스트 시 주의사항
+
+실제 `npm run start:dev` 에서 실행되는 서버와 테스트 서버는 다르다.
+따라서, 테스팅 환경도 실제 구동 환경의 설정을 그대로 적용시켜줘야 한다.
+예를 들어 url의 타입을 controller의 파라미터 타입으로 변환시키는 모듈을 테스트 서버에도 다음과 같이 적용시켜야한다.
+
+```ts
+// main.ts
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      // ... 생략
+      transform: true, // 변환 옵션
+    }),
+  );
+  await app.listen(3000);
+}
+```
+
+```ts
+// app.e2e-spec.ts
+
+beforeAll(async () => {
+  const moduleFixture: TestingModule = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+  app = moduleFixture.createNestApplication();
+  app.useGlobalPipes(
+    new ValidationPipe({
+      // ... 생략
+      transform: true, // 변환 옵션
+    }),
+  );
+  await app.init();
+});
+```
