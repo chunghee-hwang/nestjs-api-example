@@ -125,7 +125,7 @@ app.module.ts에 다음과 같이 MoviesController가 자동으로 추가되었�
 
 - Module : 모듈 정의
 - Controller: 컨트롤러 정의
-- Injectable
+- Injectable: 의존성 주입이 가능한 클래스 정의
 - Get: Get 방식 요청 컨트롤러 정의(Read)
 - Post: Post 방식 요청 컨트롤러 정의(Create)
 - Delete: Delete 방식 요청 컨트롤러 정의(Delete)
@@ -258,4 +258,79 @@ constructor(private readonly movieService: MoviesService/*타입을 반드시 �
 
 ## 3. Unit Testing
 
-## 4. E2E Testing
+Unit Testing : 여러 개의 함수 단위로 테스트하는 것.
+
+- jest는 자바스크립트를 아주 쉽게 테스팅하는 npm 패키지이다.
+- NestJS에서는 세팅이 자동으로 된다.
+- 만약 movies.service.ts파일을 테스트하고 싶다면 movies.service.spec.ts파일이 있어야한다.
+- jest는 spec.ts 파일들만을 찾아서 .ts 파일을 테스트를 하는데 도움을 준다.
+
+### jest --convergae
+
+코드가 얼마나 테스팅 됐는지, 안 됐는지 알려준다.
+
+```bash
+npm run test:cov
+```
+
+<img src="./imgs/jest1.png"></img>  
+12.5 퍼센트의 Function, 18.75퍼센트의 라인, 12~40번까지의 라인은 테스팅되지 않았다고 나왔다.
+
+### jest --watch
+
+watch 모드로 테스트 할 수 있다.
+
+```bash
+npm run test:watch
+# a를 눌러서 모든 테스트 수행
+```
+
+<img src="./imgs/jest2.png"></img>  
+모든 테스트가 통과되었다.
+
+### 단위 테스트 작성하기
+
+- describe: 테스트를 묘사하는 함수
+- beforeEach : 테스트 하기 전에 실행되는 함수
+- it(individual test): 실제 개별 테스트를 하는 함수
+- expect: 로직의 값이 어떤 값이 될 것이라고 예측하는 함수
+
+```ts
+// movies.service.spec.ts
+
+describe('MoviesService', () => {
+  let service: MoviesService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [MoviesService],
+    }).compile();
+
+    service = module.get<MoviesService>(MoviesService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('getAll()', () => {
+    it('should return an array', () => {
+      const result = service.getAll();
+      expect(result).toBeInstanceOf(Array);
+    });
+  });
+});
+```
+
+<img src="./imgs/jest3.png"></img>
+
+테스트를 진행하고 나서 다시 `npm run test:cov`를 입력하면 테스트 범위가 증가한 것을 알 수 있다.  
+<img src="./imgs/jest4.png"></img>
+
+모든 코드에 대해 테스트를 작성했을 경우 다음과 같이 테스트 범위가 100%가 된다.
+<img src="./imgs/jest5.png"></img>
+
+## 4. end-to-end(e2e) testing
+
+e2e: 모든 시스템을 테스팅하는 것.
+웹페이지를 테스트할 때 사용하고, 사용자 관점에서 확인할 때 사용한다.
